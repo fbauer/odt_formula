@@ -269,8 +269,8 @@ atoms = (functionname + spaces + p.a('(') + parameterlist + p.a(')') |
         automaticintersection |
         namedexpression |
         error |
-        prefixop +  expression |
-        p.a('(') + expression +  p.a(')'))
+        prefixop +  expression
+        )
         
 def infix(tree):
     if not tree[1]:
@@ -291,10 +291,11 @@ infix_ex = ((postfix_ex | atoms) + p.many(infixop + (postfix_ex | atoms))) >> in
 #XXX get rid of left recursion
 expression.define(
     spaces + ((
-        postfix_ex |
-        infix_ex
+        (p.skip(p.a('(')) + expression + p.skip(p.a(')'))) >> lift |
+        postfix_ex  >> tag('expression')|
+        infix_ex >> tag('expression')
         )
-        >> tag('expression'))
+       )
          +  spaces 
     )
 

@@ -23,6 +23,7 @@ def test_number(input, expected):
                           (u'0+0', ('infixop', ('+', ('number', 0), ('number', 0)))),
                           (u'0+1', ('infixop', ('+', ('number', 0), ('number', 1)))),
                           (u'0+"foo"', ('infixop', ('+', ('number', 0), ('string', 'foo')))),
+                          (u'(0+"foo")', ('infixop', ('+', ('number', 0), ('string', 'foo')))),
                           (u'"foo"%', ('postfixop', ('%', ('string', 'foo')))),
                           (u'0+"foo"%', ('infixop',
                                          ('+',
