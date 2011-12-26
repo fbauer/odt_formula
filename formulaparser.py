@@ -11,10 +11,14 @@ automaticintersection = p.a('')
 namedexpression  = p.a('')
 error = p.a('')
 iri = p.a('a')
+Node = namedtuple('Node', ['tag', 'value']) 
 
+
+def lift(x):
+    return x[0]
 
 def tag(t):
-    Node = namedtuple('Node', ['tag', 'value']) 
+
     return lambda x: Node(t, x)
 
 def oneof(ts):
@@ -218,9 +222,9 @@ String ::= '"' ([^"#x00] | '""')* '"'
 '''
 
 char = p.some(lambda x: x not in '"\0')
-string = p.a('"') + p.many(
-    (p.a('"') + p.a('"')) | char
-    ) + p.a('"')
+string = (p.skip(p.a('"'))
+          + (p.many((p.a('"') + p.a('"')) | char) >> join)
+          + p.skip(p.a('"'))) >> tag('string')
 
 '''
 Number ::= StandardNumber |
@@ -255,25 +259,43 @@ Error
 ) Whitespace*
 SingleQuoted ::= "'" ([^'] | "''")+ "'"
 '''
-#XXX get rid of left recursion
-expression.define(
-    spaces + (
-                    functionname + spaces + p.a('(') + parameterlist + p.a(')') |
+
+atoms = (functionname + spaces + p.a('(') + parameterlist + p.a(')') |
         number |
         string |
-
-
         array |
-        prefixop +  expression |
-#        expression + postfixop |
-#        expression + infixop + expression |
-        p.a('(') + expression +  p.a(')') |
         reference |
         quotedlabel |
         automaticintersection |
         namedexpression |
-        error
-        ) +  spaces 
+        error |
+        prefixop +  expression |
+        p.a('(') + expression +  p.a(')'))
+        
+def infix(tree):
+    if not tree[1]:
+        return lift(tree)
+    else:
+        return tag('infixop')((tree[1][0][0], tree[0], tree[1][0][1]))
+
+def postfix(tree):
+    if not tree[1]:
+        return lift(tree)
+    else:
+        return tag('postfixop')((tree[1][0][0], tree[0]))
+
+postfix_ex = (atoms + postfixop) >> postfix
+infix_ex = ((postfix_ex | atoms) + p.many(infixop + (postfix_ex | atoms))) >> infix
+
+
+#XXX get rid of left recursion
+expression.define(
+    spaces + ((
+        postfix_ex |
+        infix_ex
+        )
+        >> tag('expression'))
+         +  spaces 
     )
 
 '''
