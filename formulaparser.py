@@ -1,5 +1,6 @@
 import funcparserlib.parser as p
 import string
+from collections import namedtuple
 #dummy declarations, incorrect
 whitespace = p.a(' ')
 array = p.a('')
@@ -10,6 +11,11 @@ automaticintersection = p.a('')
 namedexpression  = p.a('')
 error = p.a('')
 iri = p.a('a')
+
+
+def tag(t):
+    Node = namedtuple('Node', ['tag', 'value']) 
+    return lambda x: Node(t, x)
 
 def oneof(ts):
     return reduce(lambda x, y: x|y, [p.a(t) for t in ts])
@@ -227,8 +233,9 @@ StandardNumber ::= [0-9]+ ('.' [0-9]+)? ([eE] [-+]? [0-9]+)?
 digit = p.oneplus(p.some(lambda c: c.isdigit()))
 digits = digit >> join
 exponent = (p.maybe(oneof('eE') + p.maybe(oneof('-+')) + digits) >> join)
-standardnumber = (digits + p.maybe(p.a('.') + digits) + exponent) 
-number = (standardnumber | p.a('.') + digits + exponent) >> join>> float
+standardnumber = (digits + (p.maybe(p.a('.') + digits) >> join) + exponent) 
+number = (standardnumber | (p.a('.') + digits + exponent) >> join) >> join >> float >> tag(u'number')
+
 '''
 Expression ::=
 Whitespace* (
@@ -280,8 +287,6 @@ ForceRecalc ::= '='
 force_recalc = p.a('=')
 intro = p.a('=') + p.maybe(force_recalc)
 
-def tag(t):
-    return lambda x:(t, x)
 
 formula = (p.maybe(intro) >> tag('intro')) + expression
 
