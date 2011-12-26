@@ -30,6 +30,12 @@ def test_number(input, expected):
                                           ('postfixop',
                                            ('%',
                                             ('string', 'foo')))))),
+                          (u'(0+"foo")%', ('postfixop',
+                                           ('%',
+                                            ('infixop',
+                                             ('+',
+                                              ('number', 0),
+                                              ('string', 'foo')))))),                          
                           ])
 def test_expression(input, expected):
     result = f.expression.parse(input)
