@@ -41,7 +41,13 @@ letterxml = oneof(string.letters)
 expression = p.forward_decl()
 singlequoted = p.a("'") + p.oneplus(p.a("'") + p.a("'") | p.some(lambda x: x != "'")) + p.a("'")
 spaces = p.skip(p.many(whitespace))
-identifier = letterxml + (p.many(letterxml | digitxml | p.a('_') | p.a('.') | combiningcharxml) >> join) >> join
+identifier = (letterxml +
+              (p.many(letterxml |
+                      digitxml |
+                      p.a('_') |
+                      p.a('.') |
+                      combiningcharxml) >> join)
+              >> join) >> string.upper >> tag(u'identifier')
 
 ## Whitespace ::= #x20 | #x09 | #x0a | #x0d
 
@@ -135,11 +141,26 @@ namedexpression = (simplenamedexpression | sheetlocalnamedexpression | externaln
 ## Separator ::= ';'
 
 parameter = expression
-separator = p.a(';')
-emptyorparameter = spaces | parameter
-parameterlist = p.maybe(parameter + p.many(separator + emptyorparameter ) |
-                        separator +  emptyorparameter + # /* first param empty */
-                        (separator +  emptyorparameter ))
+separator = p.skip(p.a(';'))
+def mkNone(x):
+    if isinstance(x, p._Ignored):
+        return None
+    else:
+        return x
+emptyorparameter = p.maybe(p.skip(p.oneplus(whitespace)) | parameter) >> mkNone
+
+def empty(x):
+    if x == [None]:
+        return []
+    else:
+        return x
+
+def flat(x):
+    return [x[0]] + x[1]
+
+parameterlist = p.maybe(parameter + p.many(separator + emptyorparameter) |
+                        #(separator >> (lambda x: None)) +
+                        emptyorparameter + p.many(separator +  emptyorparameter ))>> flat >> empty >> tag(u'parameterlist')
 
 ## FunctionName ::= Identifier
 ## Identifier ::= LetterXML (LetterXML | DigitXML |
@@ -212,8 +233,9 @@ number = (standardnumber | (p.a('.') + digits + exponent) >> join) >> join >> fl
 ## ) Whitespace*
 ## SingleQuoted ::= "'" ([^'] | "''")+ "'"
 
+function = (functionname + spaces + p.skip(p.a('(')) + parameterlist + p.skip(p.a(')'))) >> tag(u'function')
 atoms = ((p.skip(p.a('(')) + expression + p.skip(p.a(')')) >> (lambda x: x.value)) |
-         functionname + spaces + p.a('(') + parameterlist + p.a(')') |
+         function |
          number |
          string |
          array |
@@ -275,5 +297,5 @@ if __name__ == '__main__':
     print reference.parse('[Sheet1.A1]')
     print expression.parse('1')
     print expression.parse('1+1')
-    print formula.parse('=IF()')
+    print formula.parse('=IF()+bar()*baz()')
     print formula.parse('=IF(5;TRUE();FALSE())')
