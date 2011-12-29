@@ -58,17 +58,17 @@ spaces = p.skip(p.many(whitespace))
 
 rowseparator = p.a('|')
 matrixrow = expression + p.many( p.a(';') +  expression)
-array = p.a('{') + matrixrow + p.many(rowseparator + matrixrow) + p.a('}')
+array = p.a('{') + matrixrow + p.many(rowseparator + matrixrow) + p.a('}') >> tag('array')
 
 ## Error ::= '#' [A-Z0-9]+ ([!?] | ('/' ([A-Z] | ([0-9] [!?]))))
 
 error = (p.a('#') + qname(string.uppercase + string.digits) +
          (oneof('!?') | (p.a('/') +  (oneof(string.uppercase) |
-                                      (oneof(string.digits) + oneof('!?'))))))
+                                      (oneof(string.digits) + oneof('!?')))))) >> tag('error')
 
 ## QuotedLabel ::= SingleQuoted
 
-quotedlabel = singlequoted
+quotedlabel = singlequoted >> tag(u'quotedlabel')
 
 ## AutomaticIntersection ::= QuotedLabel Whitespace* '!!' Whitespace* QuotedLabel
 

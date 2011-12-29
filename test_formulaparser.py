@@ -1,6 +1,8 @@
 import formulaparser as f
 import pytest
 import codecs
+import pprint
+import sys; sys.setrecursionlimit(2000)
 testcases = [
     (u'0', (u'number', 0)),
     (u'0e-1', (u'number', 0)),
@@ -243,4 +245,4 @@ def test_parser(input, expected):
                          )
 def test_toplevel(input):
     result = f.formula.parse(input)
-    print result
+    pprint.pprint(result)
