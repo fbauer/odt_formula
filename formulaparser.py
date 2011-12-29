@@ -31,7 +31,7 @@ def join(x):
 
 # entitities defined elsewhere
 # these are not quite correct but sufficient for now
-letterxml = oneof(string.letters)
+letterxml = oneof(string.letters + '$') 
 combiningcharxml = oneof(string.letters)
 digitxml = oneof(string.digits)
 iri = p.many(letterxml)
@@ -237,7 +237,7 @@ number = (standardnumber | (p.a('.') + digits + exponent) >> join) >> join >> fl
 ## SingleQuoted ::= "'" ([^'] | "''")+ "'"
 
 function = (functionname + spaces + p.skip(p.a('(')) + parameterlist + p.skip(p.a(')'))) >> tag(u'function')
-atoms = ((p.skip(p.a('(')) + expression + p.skip(p.a(')')) >> (lambda x: x.value)) |
+atoms = spaces + ((p.skip(p.a('(')) + expression + p.skip(p.a(')')) >> (lambda x: x.value)) |
          function |
          number |
          string |
@@ -247,7 +247,7 @@ atoms = ((p.skip(p.a('(')) + expression + p.skip(p.a(')')) >> (lambda x: x.value
          automaticintersection |
          namedexpression |
          error
-         )
+         ) + spaces
 
 ## >>> def eval_expr(z, list):
 ## ...     return reduce(lambda s, (f, x): f(s, x), list, z)

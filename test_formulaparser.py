@@ -96,6 +96,15 @@ testcases = [
                       (u'number', 2),
                       (u'number', 3))))))),
     
+     (u'1+(2+3)', (u"expression",
+                  (u'infixop',
+                   ('+',
+                    (u'number', 1),
+                    (u'infixop',
+                     ('+',
+                      (u'number', 2),
+                      (u'number', 3))))))),
+    
     (u'1-2*3', (u"expression",
                 (u'infixop',
                  ('-',
@@ -132,7 +141,46 @@ testcases = [
                   (u'number', 3.0))))),
     
     (u"SUM([.B4:.B5])", (u"expression", ())),
-
+    (u'(4+5)+2', ('expression',
+                  ('infixop',
+                   (u'+',
+                    ('infixop',
+                     (u'+',
+                      (u'number', 4.0),
+                      (u'number', 5.0))),
+                    (u'number', 2.0))))),
+    (u'(4 + 5)+2', ('expression',
+                    ('infixop',
+                     (u'+',
+                      ('infixop',
+                       (u'+',
+                        (u'number', 4.0),
+                        (u'number', 5.0))),
+                      (u'number', 2.0))))),
+    (u'(4 * 5)+2\n', ('expression',
+                      ('infixop',
+                       (u'+',
+                        ('infixop',
+                         (u'*',
+                          (u'number', 4.0),
+                          (u'number', 5.0))),
+                        (u'number', 2.0))))),
+    (u'("4" * "5")+2\n', ('expression',
+                          ('infixop',
+                           (u'+',
+                            ('infixop',
+                             (u'*',
+                              (u'string', u"4"),
+                              (u'string', u"5"))),
+                            (u'number', 2.0))))),
+    (u'("4" & "5")+2\n', ('expression',
+                          ('infixop',
+                           (u'+',
+                            ('infixop',
+                             (u'&',
+                              (u'string', u"4"),
+                              (u'string', u"5"))),
+                            (u'number', 2.0))))),
     (u'IF()', (u"function",
                ((u'identifier', u'IF'),
                 (u'parameterlist', [])))),
@@ -176,7 +224,8 @@ testcases = [
                                   None, None])),
     
     (u";1", (u"parameterlist", [None, (u"expression", (u"number", 1))])),
-    (u"[.B4:.B5]", (u"paramerterlist", ())),
+    (u"[.B4:.B5]", (u"parameterlist", ())),
+    (u'=("4" & "5")+2\n', (u"formula", ())),
 
 
     ]
@@ -185,6 +234,7 @@ testcases = [
 def test_parser(input, expected):
     tag, value = expected
     result = getattr(f, tag).parse(input)
+    print result
     assert result.tag == tag
     assert result.value == value
     
@@ -192,4 +242,5 @@ def test_parser(input, expected):
                          codecs.open('examples.txt', 'r', 'utf-8'),
                          )
 def test_toplevel(input):
-    f.formula.parse(input)
+    result = f.formula.parse(input)
+    print result
