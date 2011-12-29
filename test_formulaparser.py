@@ -2,6 +2,7 @@ import formulaparser as f
 import pytest
 import codecs
 import pprint
+# FIXME
 import sys; sys.setrecursionlimit(2000)
 testcases = [
     (u'0', (u'number', 0)),
@@ -227,7 +228,16 @@ testcases = [
     
     (u";1", (u"parameterlist", [None, (u"expression", (u"number", 1))])),
     (u"[.B4:.B5]", (u"parameterlist", ())),
-    (u'=("4" & "5")+2\n', (u"formula", ())),
+    (u'=("4" & "5")+2\n', ('formula',
+                           (('intro', (u'=', None)),
+                            ('expression',
+                             ('infixop',
+                              (u'+',
+                               ('infixop',
+                                (u'&',
+                                 ('string', u'4'),
+                                 ('string', u'5'))),
+                               (u'number', 2.0))))))),
 
 
     ]
