@@ -1,6 +1,6 @@
 import formulaparser as f
 import pytest
-
+import codecs
 testcases = [
     (u'0', (u'number', 0)),
     (u'0e-1', (u'number', 0)),
@@ -187,3 +187,9 @@ def test_parser(input, expected):
     result = getattr(f, tag).parse(input)
     assert result.tag == tag
     assert result.value == value
+    
+@pytest.mark.parametrize(('input'),
+                         codecs.open('examples.txt', 'r', 'utf-8'),
+                         )
+def test_toplevel(input):
+    f.formula.parse(input)
