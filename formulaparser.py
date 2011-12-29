@@ -137,10 +137,10 @@ reference = p.a('[') + p.maybe(source) +  rangeaddress +  p.a(']') >> tag('refer
 ## ExternalNamedExpression ::=
 ## Source '#' (SimpleNamedExpression | SheetLocalNamedExpression)
 
-simplenamedexpression = (identifier | p.a('$$') +  (identifier | singlequoted))
+simplenamedexpression = (identifier | p.a('$') + p.a('$') +  (identifier | singlequoted))
 sheetlocalnamedexpression = quotedsheetname + p.a('.') + simplenamedexpression
 externalnamedexpression = source + p.a('#') +  (simplenamedexpression | sheetlocalnamedexpression)
-namedexpression = (simplenamedexpression | sheetlocalnamedexpression | externalnamedexpression)
+namedexpression = (simplenamedexpression | sheetlocalnamedexpression | externalnamedexpression) >> tag(u'namedexpression')
 
 ## ParameterList ::= /* empty */ |
 ## Parameter (Separator EmptyOrParameter )* |
