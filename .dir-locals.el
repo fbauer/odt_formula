@@ -3,5 +3,5 @@
 
 ((python-mode
   (pytest . "\.env/bin/py\.test")
-  (py-python-command ".env/bin/python")))
+  (py-python-command . "\.env/bin/python")))
 

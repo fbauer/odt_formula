@@ -2,124 +2,153 @@ import formulaparser as f
 import pytest
 
 @pytest.mark.parametrize(('input', 'expected'),
-                         [(u'0', 0),
-                          (u'0e-1', 0),
-                          (u'0e-1', 0),
-                          (u'0.1e-1', 0.01),
-                          (u'0.1e+1', 1),
-                          ])
-def test_number(input, expected):
-    result = f.number.parse(input)
-    assert result.tag == 'number'
-    assert result.value == expected
+                         [(u'0', (u'number', 0)),
+                          (u'0e-1', (u'number', 0)),
+                          (u'0e-1', (u'number', 0)),
+                          (u'0.1e-1', (u'number', 0.01)),
+                          (u'0.1e+1', (u'number', 1)),
 
-@pytest.mark.parametrize(('input', 'expected'),
-                         [(u'0', ('number', 0)),
-                          (u'0e-1',('number', 0)),
-                          (u'0e-1', ('number', 0)),
-                          (u'0.1e-1', ('number', 0.01)),
-                          (u'0.1e+1', ('number', 1)),
-                          (u'.1e+1', ('number', 1)),
-                          (u'0+0', ('infixop',
+                          (u'IF', (u"identifier", u'IF')),
+                          (u'iF', (u"identifier", u'IF')),
+                          
+                          (u'0', (u"expression", ('number', 0))),
+                          (u'0e-1',(u"expression", ('number', 0))),
+                          (u'0e-1', (u"expression", ('number', 0))),
+                          (u'0.1e-1', (u"expression", ('number', 0.01))),
+                          (u'0.1e+1', (u"expression", ('number', 1))),
+                          (u'.1e+1', (u"expression", ('number', 1))),
+                          (u'0+0', (u"expression", ('infixop',
                                     ('+',
                                      ('number', 0),
-                                     ('number', 0)))),
+                                     ('number', 0))))),
 
-                          (u'0+1', ('infixop',
+                          (u'0+1', (u"expression", ('infixop',
                                     ('+',
                                      ('number', 0),
-                                     ('number', 1)))),
+                                     ('number', 1))))),
 
-                          (u'0+"foo"', ('infixop',
+                          (u'0+"foo"', (u"expression", ('infixop',
                                         ('+',
                                          ('number', 0),
-                                         ('string', 'foo')))),
+                                         ('string', 'foo'))))),
 
-                          (u'(0+"foo")', ('infixop',
+                          (u'(0+"foo")', (u"expression", ('infixop',
                                           ('+',
                                            ('number', 0),
-                                           ('string', 'foo')))),
+                                           ('string', 'foo'))))),
 
-                          (u'"foo"%', ('postfixop',
+                          (u'"foo"%', (u"expression", ('postfixop',
                                        ('%',
-                                        ('string', 'foo')))),
+                                        ('string', 'foo'))))),
 
 
-                          (u'0+"foo"%', ('infixop',
+                          (u'0+"foo"%', (u"expression", ('infixop',
                                          ('+',
                                           ('number', 0),
                                           ('postfixop',
                                            ('%',
-                                            ('string', 'foo')))))),
+                                            ('string', 'foo'))))))),
 
-                          (u'(0+"foo")%', ('postfixop',
+                          (u'(0+"foo")%', (u"expression", ('postfixop',
                                            ('%',
                                             ('infixop',
                                              ('+',
                                               ('number', 0),
-                                              ('string', 'foo')))))),
-                          (u'IF()', ('function',
+                                              ('string', 'foo'))))))),
+                          (u'IF()', (u"expression", ('function',
                                      ((u'identifier', u'IF'),
                                       (u'parameterlist', []))
-                                     )),
-                          ])
-def test_expression(input, expected):
-    result = f.expression.parse(input)
-    print result
-    assert result.tag == 'expression'
-    assert result.value == expected
-    
-@pytest.mark.parametrize(('input', 'expected'),
-                         [(u'IF', u'IF'),
-                          (u'iF', u'IF'),
-                          ])
-def test_identifier(input, expected):
-    result = f.identifier.parse(input)
-    print result
-    assert result.tag == 'identifier'
-    assert result.value == expected
+                                     ))),
+                          (u'1-2-3', (u"expression", (u'infixop',
+                                      ('-',
+                                       (u'infixop',
+                                        ('-',
+                                         (u'number', 1),
+                                         (u'number', 2))),
+                                       (u'number', 3))))),
+                          (u'(1-2)-3', (u"expression", (u'infixop',
+                                        ('-',
+                                         (u'infixop',
+                                          ('-',
+                                           (u'number', 1),
+                                           (u'number', 2))),
+                                         (u'number', 3))))),
+                          (u'1-(2-3)', (u"expression", (u'infixop',
+                                        ('-',
+                                         (u'number', 1),
+                                         (u'infixop',
+                                          ('-',
+                                           (u'number', 2),
+                                           (u'number', 3))))))),
+                          (u'1-2*3', (u"expression", (u'infixop',
+                                        ('-',
+                                         (u'number', 1),
+                                         (u'infixop',
+                                          ('*',
+                                           (u'number', 2),
+                                           (u'number', 3))))))),
+                          (u'(1-2)*3', (u"expression", (u'infixop',
+                                        ('*',
 
-@pytest.mark.parametrize(('input', 'expected'),
-                         [(u'IF()', ((u'identifier', u'IF'),
-                                      (u'parameterlist', []))),
-                          (u'iF()', ((u'identifier', u'IF'),
-                                      (u'parameterlist', []))),
-                          (u'iF(if())', ((u'identifier', u'IF'),
+                                         (u'infixop',
+                                          ('-',
+                                           (u'number', 1),
+                                           (u'number', 2))),
+                                         (u'number', 3)),
+                                        ))),
+                          (u'1--2', (u"expression", (u'infixop',
+                                     ('-',
+                                      (u'number', 1),
+                                      (u'prefixop',
+                                       ('-',
+                                        (u'number', 2))))))),
+                          (u'1^2^3', (u"expression", ('infixop',
+                                      (u'^',
+                                       ('infixop',
+                                        (u'^',
+                                         (u'number', 1.0),
+                                         (u'number', 2.0))),
+                                       (u'number', 3.0))))),
+                          (u"SUM([.B4:.B5])", (u"expression", ())),
+
+
+                          (u'IF()', (u"function", ((u'identifier', u'IF'),
+                                      (u'parameterlist', [])))),
+                          (u'iF()', (u"function", ((u'identifier', u'IF'),
+                                      (u'parameterlist', [])))),
+                          (u'iF(if())', (u"function", ((u'identifier', u'IF'),
                                          (u'parameterlist',
                                           [('expression',
                                             (u'function',
                                              ((u'identifier', u'IF'),
                                               (u'parameterlist', [])))),
-                                           ]))),
-                           (u'iF(1)', ((u'identifier', u'IF'),
+                                           ])))),
+                           (u'iF(1)', (u"function", ((u'identifier', u'IF'),
                                        (u'parameterlist',
-                                        [('expression', (u'number', 1.0))]))),
-                          (u'iF(1;2)', ((u'identifier', u'IF'),
+                                        [('expression', (u'number', 1.0))])))),
+                          (u'iF(1;2)', (u"function", ((u'identifier', u'IF'),
                                        (u'parameterlist',
                                         [('expression', (u'number', 1.0)),
                                          ('expression', (u'number', 2.0))
-                                         ]))),
-                          ])
-def test_function(input, expected):
-    result = f.function.parse(input)
-    print result
-    assert result.tag == 'function'
-    assert result.value == expected
+                                         ])))),
 
-@pytest.mark.parametrize(('input', 'expected'),
                          #0 parameters
-                         [(u"", []),
+                         (u"", (u"parameterlist", [])),
                           #2 empty parameters
-                          (u";", [None, None]),
-                          (u";;", [None, None, None]),
-                          (u"1", [(u"expression", (u"number", 1))]),
-                          (u"1;", [(u"expression", (u"number", 1)), None]),
-                          (u"1;;", [(u"expression", (u"number", 1)), None, None]),                                                    
-                          (u"1; ;", [(u"expression", (u"number", 1)), None, None]),                          
-                          (u";1", [None, (u"expression", (u"number", 1))]),
+                          (u";", (u"parameterlist", [None, None])),
+                          (u";;", (u"parameterlist", [None, None, None])),
+                          (u"1", (u"parameterlist", [(u"expression", (u"number", 1))])),
+                          (u"1;", (u"parameterlist", [(u"expression", (u"number", 1)), None])),
+                          (u"1;;", (u"parameterlist", [(u"expression", (u"number", 1)), None, None])),                                                    
+                          (u"1; ;", (u"parameterlist", [(u"expression", (u"number", 1)), None, None])),                          
+                          (u";1", (u"parameterlist", [None, (u"expression", (u"number", 1))])),
+                          (u"[.B4:.B5]", (u"paramerterlist", ())),
+
+                          
                           ])
-def test_parameterlist(input, expected):
-    result = f.parameterlist.parse(input)
-    print result
-    assert result.tag == u'parameterlist'
-    assert result.value == expected
+def test_parser(input, expected):
+    tag, value = expected 
+    result = getattr(f, tag).parse(input)
+    assert result.tag == tag
+    assert result.value == value
+

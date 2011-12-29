@@ -1,16 +1,8 @@
 import funcparserlib.parser as p
 import string
 from collections import namedtuple
-#dummy declarations, incorrect
-whitespace = p.a(' ')
-array = p.a('')
 
-digitxml = p.a('1')
-combiningcharxml = p.a('g')
-automaticintersection = p.a('')
-namedexpression  = p.a('')
-error = p.a('')
-iri = p.a('a')
+
 Node = namedtuple('Node', ['tag', 'value']) 
 
 
@@ -37,10 +29,16 @@ def join(x):
         return ''
     return ''.join(i for i in x if i is not None)
 
+# entitities defined elsewhere
+# these are not quite correct but sufficient for now
 letterxml = oneof(string.letters)
+combiningcharxml = oneof(string.letters)
+digitxml = oneof(string.digits)
+iri = p.many(letterxml)
+
 expression = p.forward_decl()
 singlequoted = p.a("'") + p.oneplus(p.a("'") + p.a("'") | p.some(lambda x: x != "'")) + p.a("'")
-spaces = p.skip(p.many(whitespace))
+
 identifier = (letterxml +
               (p.many(letterxml |
                       digitxml |
@@ -52,6 +50,7 @@ identifier = (letterxml +
 ## Whitespace ::= #x20 | #x09 | #x0a | #x0d
 
 whitespace = oneof(u'\x20\x09\x0a\x0d')
+spaces = p.skip(p.many(whitespace))
 
 ## Array ::= '{' MatrixRow ( RowSeparator MatrixRow )* '}'
 ## MatrixRow ::= Expression ( ';' Expression )*
@@ -116,7 +115,7 @@ rangeaddress = (sheetlocatororempty + p.a('.') + column + row + p.maybe(p.a(':')
                 sheetlocator + p.a('.') + row + p.a(':') + sheetlocator + p.a('.') + row
                 )
 
-reference = p.a('[') + p.maybe(source) +  rangeaddress +  p.a(']')
+reference = p.a('[') + p.maybe(source) +  rangeaddress +  p.a(']') >> tag('reference')
 
 ## NamedExpression ::= SimpleNamedExpression |
 ## SheetLocalNamedExpression | ExternalNamedExpression
@@ -173,9 +172,10 @@ functionname = identifier
 ## ReferenceConcatenationOp ::= '~'
 ## RangeOp ::= ':'
 
+rangeop = p.a(':')
 intersectionop = p.a('!')
 referenceconcatenationop = p.a('~')
-rangeop = p.a(':')
+
 referenceop = intersectionop | referenceconcatenationop | rangeop
 
 ## PrefixOp ::= '+' | '-'
@@ -185,10 +185,13 @@ referenceop = intersectionop | referenceconcatenationop | rangeop
 ## ComparisonOp ::= '=' | '<>' | '<' | '>' | '<=' | '>='
 ## StringOp ::= '&'
 
-prefixop = oneof('+-')
-postfixop = p.a('%')
 
-arithmeticop = p.a('+') | p.a('-') | p.a('*') | p.a('/') | p.a('^')
+postfixop = p.a('%')
+prefixop = oneof('+-')
+pow_op = p.a('^')
+add_op =  p.a('+') | p.a('-')
+mul_op = p.a('*') | p.a('/')
+arithmeticop = add_op | mul_op | pow_op
 comparisonop = p.a('=') | p.a('<>') | p.a('<') | p.a('>') | p.a('<=') | p.a('>=')
 stringop = p.a('&')
 infixop = arithmeticop | comparisonop | stringop | referenceop
@@ -243,31 +246,49 @@ atoms = ((p.skip(p.a('(')) + expression + p.skip(p.a(')')) >> (lambda x: x.value
          quotedlabel |
          automaticintersection |
          namedexpression |
-         error |
-         prefixop +  expression
+         error
          )
-        
+
+## >>> def eval_expr(z, list):
+## ...     return reduce(lambda s, (f, x): f(s, x), list, z)
+
 def infix(tree):
-    if not tree[1]:
-        return first(tree)
+    z, tail = tree
+    if not tail:
+        return z
     else:
-        return tag('infixop')((tree[1][0][0], tree[0], tree[1][0][1]))
+        return reduce(lambda s, (f, x): tag('infixop')((f, s, x)), tail, z)
+
 
 def postfix(tree):
-    if not tree[1]:
-        return first(tree)
+    z, tail = tree
+    if not tail:
+        return z
     else:
-        return tag('postfixop')((tree[1][0][0], tree[0]))
+        return reduce(lambda s, f: tag('postfixop')((f, s)), tail, z)
+    
+def prefix(tree):
+    tail, z = tree
+    if not tail:
+        return z
+    else:
+        return reduce(lambda s, f: tag('prefixop')((f, s)), tail, z)
 
-postfix_ex = (atoms + postfixop) >> postfix
-infix_ex = ((postfix_ex | atoms) + p.many(infixop + (postfix_ex | atoms))) >> infix
+#
+# expression parsing + precedence
+range_ex = (atoms + p.many(rangeop + atoms)) >> infix
+intersection_ex = (range_ex + p.many(intersectionop + range_ex)) >> infix
+referenceconcatenation_ex = (intersection_ex + p.many(referenceconcatenationop + intersection_ex)) >> infix
+postfix_ex = (referenceconcatenation_ex + p.many(postfixop)) >> postfix
+prefix_ex = (p.many(prefixop) + postfix_ex) >> prefix
+factor = (prefix_ex + p.many(pow_op + prefix_ex)) >> infix
+term = (factor+ p.many(mul_op + factor)) >> infix
+infix_ex = (term + p.many(add_op + term)) >> infix
+string_ex = (infix_ex + p.many(stringop + infix_ex)) >> infix
+comparision_ex = (string_ex + p.many(comparisonop + string_ex)) >> infix
 
-expression.define(spaces + ((postfix_ex >> tag('expression') |
-                             infix_ex >> tag('expression')
-                             )
-                            )
-                  +  spaces 
-                  )
+expression.define(spaces + (comparision_ex >> tag('expression'))
+                  +  spaces)
 
 ## Formula ::= Intro? Expression
 ## Intro ::= '=' ForceRecalc?
