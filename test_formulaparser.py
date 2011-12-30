@@ -298,7 +298,14 @@ testcases = [
                        (None,
                         ((None, ('string', 'B'), (u'integer', 4)),
                          (None, ('string', 'B'), (u'integer', 5))))) )])),
-    (u"['./openformula-testsuite.ods'#'Sheet1'.B4]", (u"reference", ())),
+    (u"./openformula-testsuite.ods", (u"iri", u"./openformula-testsuite.ods")),
+    (u"'./openformula-testsuite.ods'#",
+     (u"source", (u"iri", u"./openformula-testsuite.ods"))),
+    (u"['./openformula-testsuite.ods'#'Sheet1'.B4]",
+     ('reference',
+      (('source', (u'iri', u'./openformula-testsuite.ods')),
+       ((('string', u'Sheet1'), (u'string', u'B'), (u'integer', 4)),
+        None)))),
     ]
 @pytest.mark.parametrize(('input', 'expected'),
                          testcases)

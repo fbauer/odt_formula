@@ -58,7 +58,7 @@ identifier = (letterxml +
                       p.a('.') |
                       combiningcharxml) >> join)
               >> join) >> string.upper >> tag(u'identifier')
-iri = identifier
+iri = p.oneplus(p.some(lambda x: x not in u"'#")) >> join >> tag(u'iri')
 ## Whitespace ::= #x20 | #x09 | #x0a | #x0d
 
 whitespace = oneof(u'\x20\x09\x0a\x0d')
@@ -119,7 +119,7 @@ column = (absref + (qname(string.uppercase) >> tag(u'string'))) >> isabs
 row = (absref + ((qchar('123456789') + qstring('0123456789')) >> join >> int>> tag(u'integer'))) >> isabs
 subtablecell = (column + row) | quotedsheetname
 
-source = (p.a("'") + iri + p.a("'") + p.a("#")) >> tag("source")
+source = (quote + iri + quote + p.skip(p.a("#"))) >> tag("source")
 sheetname = (quotedsheetname | absref + (p.oneplus(p.some(lambda x: x not in "]. #$'")) >> join)) >> tag('string')
 # XXX cell address already matched by subtablecell, need non-greedy match there
 sheetlocator = sheetname #+ p.many(p.a('.') + subtablecell)
