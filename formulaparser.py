@@ -45,10 +45,11 @@ letterxml = p.some(letters.match)
 combiningchars = re.compile(ur'[\u0300-\u0345,\u0360-\u0361,\u0483-\u0486,\u0591-\u05A1,\u05A3-\u05B9,\u05BB-\u05BD,\u05BF,\u05C1-\u05C2,\u05C4,\u064B-\u0652,\u0670,\u06D6-\u06DC,\u06DD-\u06DF,\u06E0-\u06E4,\u06E7-\u06E8,\u06EA-\u06ED,\u0901-\u0903,\u093C,\u093E-\u094C,\u094D,\u0951-\u0954,\u0962-\u0963,\u0981-\u0983,\u09BC,\u09BE,\u09BF,\u09C0-\u09C4,\u09C7-\u09C8,\u09CB-\u09CD,\u09D7,\u09E2-\u09E3,\u0A02,\u0A3C,\u0A3E,\u0A3F,\u0A40-\u0A42,\u0A47-\u0A48,\u0A4B-\u0A4D,\u0A70-\u0A71,\u0A81-\u0A83,\u0ABC,\u0ABE-\u0AC5,\u0AC7-\u0AC9,\u0ACB-\u0ACD,\u0B01-\u0B03,\u0B3C,\u0B3E-\u0B43,\u0B47-\u0B48,\u0B4B-\u0B4D,\u0B56-\u0B57,\u0B82-\u0B83,\u0BBE-\u0BC2,\u0BC6-\u0BC8,\u0BCA-\u0BCD,\u0BD7,\u0C01-\u0C03,\u0C3E-\u0C44,\u0C46-\u0C48,\u0C4A-\u0C4D,\u0C55-\u0C56,\u0C82-\u0C83,\u0CBE-\u0CC4,\u0CC6-\u0CC8,\u0CCA-\u0CCD,\u0CD5-\u0CD6,\u0D02-\u0D03,\u0D3E-\u0D43,\u0D46-\u0D48,\u0D4A-\u0D4D,\u0D57,\u0E31,\u0E34-\u0E3A,\u0E47-\u0E4E,\u0EB1,\u0EB4-\u0EB9,\u0EBB-\u0EBC,\u0EC8-\u0ECD,\u0F18-\u0F19,\u0F35,\u0F37,\u0F39,\u0F3E,\u0F3F,\u0F71-\u0F84,\u0F86-\u0F8B,\u0F90-\u0F95,\u0F97,\u0F99-\u0FAD,\u0FB1-\u0FB7,\u0FB9,\u20D0-\u20DC,\u20E1,\u302A-\u302F,\u3099,\u309A]')
 combiningcharxml = p.some(combiningchars.match)
 digitxml = oneof(string.digits)
-iri = p.many(letterxml)
+
 
 expression = p.forward_decl()
-singlequoted = p.a("'") + p.oneplus(p.a("'") + p.a("'") | p.some(lambda x: x != "'")) + p.a("'")
+quote = p.skip(p.a("'"))
+singlequoted =  quote + (p.oneplus(p.a("'") + p.a("'") | p.some(lambda x: x != "'")) >> join) + quote
 
 identifier = (letterxml +
               (p.many(letterxml |
@@ -57,7 +58,7 @@ identifier = (letterxml +
                       p.a('.') |
                       combiningcharxml) >> join)
               >> join) >> string.upper >> tag(u'identifier')
-
+iri = identifier
 ## Whitespace ::= #x20 | #x09 | #x0a | #x0d
 
 whitespace = oneof(u'\x20\x09\x0a\x0d')
@@ -104,29 +105,44 @@ automaticintersection = quotedlabel + spaces + p.a('!!') + spaces + quotedlabel
 ## CellAddress ::= SheetLocatorOrEmpty '.' Column Row /* Not used
 ## directly */
 
+def isabs(tree):
+    absref, ref = tree
+    print tree
+    if absref:
+        return tag('absref')(ref)
+    else:
+        return ref
 absref = p.maybe(p.a('$')) 
 
-quotedsheetname = absref + singlequoted | error
-column = absref + qname(string.uppercase)
-row = absref + qchar('123456789') + qstring('0123456789') >> join
+quotedsheetname = (absref + singlequoted) >> isabs | error
+column = (absref + (qname(string.uppercase) >> tag(u'string'))) >> isabs
+row = (absref + ((qchar('123456789') + qstring('0123456789')) >> join >> int>> tag(u'integer'))) >> isabs
 subtablecell = (column + row) | quotedsheetname
 
-source = p.a("'") + iri + p.a("'") + p.a("#")
-sheetname = quotedsheetname | absref + (p.oneplus(p.some(lambda x: x not in "]. #$'")) >> join)
+source = (p.a("'") + iri + p.a("'") + p.a("#")) >> tag("source")
+sheetname = (quotedsheetname | absref + (p.oneplus(p.some(lambda x: x not in "]. #$'")) >> join)) >> tag('string')
 # XXX cell address already matched by subtablecell, need non-greedy match there
 sheetlocator = sheetname #+ p.many(p.a('.') + subtablecell)
 sheetlocatororempty = p.maybe(sheetlocator)
 celladdress = sheetlocatororempty + p.a('.') + column + row # Not used directly
-
-rangeaddress = (sheetlocatororempty + p.a('.') + column + row + p.maybe(p.a(':') +  p.a('.') + column +  row ) |
-                sheetlocatororempty + p.a('.') + column +  p.a(':') + p.a('.') + column |
-                sheetlocatororempty + p.a('.') + row + p.a(':') + p.a('.') + row |
-                sheetlocator + p.a('.') + column + row + p.a(':') + sheetlocator + p.a('.') + column + row |
-                sheetlocator + p.a('.') + column + p.a(':') + sheetlocator + p.a('.') + column |
-                sheetlocator + p.a('.') + row + p.a(':') + sheetlocator + p.a('.') + row
+dot = p.skip(p.a('.'))
+colon = p.skip(p.a(':'))
+def addrow(x):
+    return (x[0], x[1], None)
+def addcolumn(x):
+    return (x[0], None, x[1])
+rangeaddress = (((sheetlocatororempty + dot + column + row) >> tuple)
+                + p.maybe(colon +  dot + ((column +  row) >> (lambda x: (None, x[0], x[1])) ) ) |
+                ((sheetlocatororempty + dot + column) >> addrow) +
+                colon + dot + (column >> (lambda x: (None, x, None))) |
+                ((sheetlocatororempty + dot + row) >> addcolumn) +
+                colon + dot + (row >> (lambda x: (None, None, x))) |
+                ((sheetlocator + dot + column + row) >> tuple) + colon + ((sheetlocator + dot + column + row) >> tuple) |
+                ((sheetlocator + dot + column) >> addrow) + colon + ((sheetlocator + dot + column) >> addrow) |
+                ((sheetlocator + dot + row) >> addcolumn) + colon + ((sheetlocator + dot + row) >> addcolumn)
                 )
 
-reference = p.a('[') + p.maybe(source) +  rangeaddress +  p.a(']') >> tag('reference')
+reference = p.skip(p.a('[')) + p.maybe(source) +  rangeaddress +  p.skip(p.a(']')) >> tag('reference')
 
 ## NamedExpression ::= SimpleNamedExpression |
 ## SheetLocalNamedExpression | ExternalNamedExpression
