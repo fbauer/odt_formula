@@ -131,15 +131,17 @@ def addrow(x):
     return (x[0], x[1], None)
 def addcolumn(x):
     return (x[0], None, x[1])
-rangeaddress = (((sheetlocatororempty + dot + column + row) >> tuple)
+rangeaddress = (
+                ((sheetlocator + dot + column + row) >> tuple) + colon + ((sheetlocator + dot + column + row) >> tuple) |
+                ((sheetlocator + dot + column) >> addrow) + colon + ((sheetlocator + dot + column) >> addrow) |
+                ((sheetlocator + dot + row) >> addcolumn) + colon + ((sheetlocator + dot + row) >> addcolumn) |
+                ((sheetlocatororempty + dot + column + row) >> tuple)
                 + p.maybe(colon +  dot + ((column +  row) >> (lambda x: (None, x[0], x[1])) ) ) |
                 ((sheetlocatororempty + dot + column) >> addrow) +
                 colon + dot + (column >> (lambda x: (None, x, None))) |
                 ((sheetlocatororempty + dot + row) >> addcolumn) +
-                colon + dot + (row >> (lambda x: (None, None, x))) |
-                ((sheetlocator + dot + column + row) >> tuple) + colon + ((sheetlocator + dot + column + row) >> tuple) |
-                ((sheetlocator + dot + column) >> addrow) + colon + ((sheetlocator + dot + column) >> addrow) |
-                ((sheetlocator + dot + row) >> addcolumn) + colon + ((sheetlocator + dot + row) >> addcolumn)
+                colon + dot + (row >> (lambda x: (None, None, x)))
+ 
                 )
 
 reference = p.skip(p.a('[')) + p.maybe(source) +  rangeaddress +  p.skip(p.a(']')) >> tag('reference')
