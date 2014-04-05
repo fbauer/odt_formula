@@ -253,11 +253,15 @@ testcases = [
     (u"", u"parameterlist", (u"parameterlist", [])),
     #2 empty parameters
     (u";", u"parameterlist", (u"parameterlist", [None, None])),
+    
     (u";;", u"parameterlist", (u"parameterlist", [None, None, None])),
+    
     (u"1", u"parameterlist",
      (u"parameterlist", [(u"expression", (u"number", 1))])),
+    
     (u"1;", u"parameterlist",
      (u"parameterlist", [(u"expression", (u"number", 1)), None])),
+    
     (u"1;;", u"parameterlist",
      (u"parameterlist", [(u"expression", (u"number", 1)), None, None])),
 
@@ -289,6 +293,7 @@ testcases = [
      (u"reference",
       (None,
        (((u'string', "Sheet1"), ('string', 'B'), (u'integer', 4)), None)))),
+    
     (u"[.B4:.B5]", u"reference",
      (u"reference",
       (None,
@@ -299,6 +304,7 @@ testcases = [
                   (None,
                    ((None, ('string', 'B'), None),
                     (None, ('string', 'B'), None))))),
+    
     (u"[.4:.5]", u"reference",(u"reference",
                   (None,
                    ((None, None, (u'integer', 4)),
@@ -308,10 +314,12 @@ testcases = [
                            (None,
                             (((u'string', "Sheet1"), ('string', 'B'), (u'integer', 4)),
                              (None, ('string', 'B'), (u'integer', 5)))))),
+    
     (u"['Sheet1'.B:.B]", u"reference",(u"reference",
                           (None,
                            (((u'string', "Sheet1"), ('string', 'B'), None),
                             (None, ('string', 'B'), None))))),
+    
     (u"['Sheet1'.4:.5]", u"reference",(u"reference",
                           (None,
                            (((u'string', "Sheet1"), None, (u'integer', 4)),
@@ -321,10 +329,12 @@ testcases = [
                            (None,
                             (((u'string', "Sheet1"), ('string', 'B'), (u'integer', 4)),
                              ((u'string', "Sheet1"), ('string', 'B'), (u'integer', 5)))))),
+    
     (u"['Sheet1'.B:'Sheet1'.B]", u"reference",(u"reference",
                           (None,
                            (((u'string', "Sheet1"), ('string', 'B'), None),
                             ((u'string', "Sheet1"), ('string', 'B'), None))))),
+    
     (u"['Sheet1'.4:'Sheet1'.5]", u"reference",(u"reference",
                           (None,
                            (((u'string', "Sheet1"), None, (u'integer', 4)),
@@ -337,10 +347,13 @@ testcases = [
                        (None,
                         ((None, ('string', 'B'), (u'integer', 4)),
                          (None, ('string', 'B'), (u'integer', 5))))) )])),
+    
     (u"./openformula-testsuite.ods", u"iri",
      (u"iri", u"./openformula-testsuite.ods")),
+    
     (u"'./openformula-testsuite.ods'#", u"source",
      (u"source", (u"iri", u"./openformula-testsuite.ods"))),
+    
     (u"['./openformula-testsuite.ods'#'Sheet1'.B4]", u"reference",
      ('reference',
       (('source', (u'iri', u'./openformula-testsuite.ods')),
