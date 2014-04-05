@@ -1,3 +1,13 @@
+"""
+Copyright (c) 2012, Florian Bauer <fbauer.devel@gmail.com>
+All rights reserved.
+
+Licensed under the terms of the 2-clause BSD license.
+See the file LICENSE.txt for details.
+
+A parser for the odt formula language as specified in 
+OpenDocument-v1.2-cd05-part2-editor-revision.pdf
+"""
 import funcparserlib.parser as p
 import string
 from collections import namedtuple

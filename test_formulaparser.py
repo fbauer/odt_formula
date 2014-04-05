@@ -1,3 +1,12 @@
+"""
+Copyright (c) 2012, Florian Bauer <fbauer.devel@gmail.com>
+All rights reserved.
+
+Licensed under the terms of the 2-clause BSD license.
+See the file LICENSE.txt for details.
+
+Tests for the code in formularparser.py
+"""
 import formulaparser as f
 import pytest
 import codecs
